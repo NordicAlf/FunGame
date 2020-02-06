@@ -1,29 +1,27 @@
 let game = { // весь игровой код
-    ctx: null,
-    width: 640,
-    height: 360,
 
-    grenade: null,
-
-    platformLeft: null,
-    platformRight: null,
-    platformChoiceControl: "platformLeft",
-
-    trash: null,
-
-    blocks: [],
-    rows: 3,
-    cols: 9,
-
-    grenadeStart: false,
-    grenadeMoveInPlatform: true,
-
+    // загружаемые картинки
     sprites: {
         background: null,
         grenade: null,
         platformLeft: null,
         platformRight: null,
         trash: null,
+    },
+
+    setSettings() {
+        this.width = 640; // ширина экрана
+        this.height = 360;  // высота экрана
+
+        this.angleGrenade = this.numRandom(-2, 2); // угол куда стартанёт граната
+        this.platformChoiceControl = "platformLeft"; // куда смотрит платформа изначально
+
+        this.blocks = []; // массив под мишени
+        this.rows = 3; // количество строк мишеней-мусорок
+        this.cols = 9;  // количестов колонок мишеней-мусорок
+
+        this.grenadeStart = false; // false - стартует после нажатия пробела
+        this.grenadeMoveInPlatform = true; // - граната вначале движется с платформой
     },
 
     start() { // запускает игру
@@ -37,6 +35,7 @@ let game = { // весь игровой код
     // инициализация
     init() {
         this.ctx = document.getElementById('myGame').getContext("2d"); // доступ к апи
+        this.setSettings();
         this.setEvents();
     },
 
@@ -127,6 +126,10 @@ let game = { // весь игровой код
             this.run();
         });
     },
+
+    numRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) + min)
+    }
 };
 
 
@@ -154,12 +157,8 @@ game.grenade = {
     height: 40,
     move() {
         this.y -= 1;
-        this.x += this.mathRandom(-5, 5);
+        this.x += game.angleGrenade;
     },
-
-    mathRandom(min, max) {
-        return Math.floor(Math.random() * (max - min + 1) + min)
-    }
 };
 
 // Запускает игру только после того, как загрузился весь HTML-документ
