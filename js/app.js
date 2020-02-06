@@ -1,5 +1,8 @@
 let game = { // весь игровой код
     ctx: null,
+    width: 640,
+    height: 360,
+
     grenade: null,
 
     platformLeft: null,
@@ -91,6 +94,8 @@ let game = { // весь игровой код
 
     // рендер
     render() {
+        this.ctx.clearRect(0, 0, this.width, this.height); // очистка экрана
+
         this.ctx.drawImage(this.sprites.background, 0, 0);
         this.ctx.drawImage(this.sprites.grenade, 0, 0,
             this.grenade.width, this.grenade.height,
@@ -107,7 +112,7 @@ let game = { // весь игровой код
         }
     },
 
-    
+
     update() {
         if (this.grenadeStart) {
             this.grenade.move();
@@ -148,7 +153,12 @@ game.grenade = {
     width: 40,
     height: 40,
     move() {
-        this.y -= 0.5;
+        this.y -= 1;
+        this.x += this.mathRandom(-5, 5);
+    },
+
+    mathRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) + min)
     }
 };
 
