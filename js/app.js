@@ -1,5 +1,4 @@
 let game = { // весь игровой код
-
     // загружаемые картинки
     sprites: {
         background: null,
@@ -13,7 +12,8 @@ let game = { // весь игровой код
         this.width = 640; // ширина экрана
         this.height = 360;  // высота экрана
 
-        this.angleGrenade = this.numRandom(-2, 2); // угол куда стартанёт граната
+        this.angleGrenade = this.numRandom(-2.5, 2.5); // угол X куда стартанёт граната
+        this.speedGrenade = 1;
         this.platformChoiceControl = "platformLeft"; // куда смотрит платформа изначально
 
         this.blocks = []; // массив под мишени
@@ -84,8 +84,11 @@ let game = { // весь игровой код
         for (let row = 0; row < this.rows; row++) {
             for (let col = 0; col < this.cols; col++) {
                 this.blocks.push({
-                    x: 60 * col,
-                    y: 60 * row
+                    active: true, // жив ли объект
+                    width: 55,
+                    height: 65,
+                    x: 65 * col,
+                    y: 50 * row
                 });
             }
         }
@@ -107,7 +110,9 @@ let game = { // весь игровой код
         }
 
         for (let block of this.blocks) {
-            this.ctx.drawImage(this.sprites.trash, 50 + block.x, 10 + block.y);
+            if (block.active === true) {
+                this.ctx.drawImage(this.sprites.trash, 30 + block.x, 10 + block.y);
+            }
         }
     },
 
@@ -115,6 +120,17 @@ let game = { // весь игровой код
     update() {
         if (this.grenadeStart) {
             this.grenade.move();
+            if (this.grenade.collide(this.platform)) {
+                this.grenade.bumpPlatform();
+            }
+        }
+
+        for (let block of this.blocks) {
+            if (block.active === true) {
+                if (this.grenade.collide(block)) { // проверка столкновения гранаты с мусоркой
+                    this.grenade.bumpBlock(block);
+                }
+            }
         }
     },
 
@@ -128,7 +144,7 @@ let game = { // весь игровой код
     },
 
     numRandom(min, max) {
-        return Math.floor(Math.random() * (max - min + 1) + min)
+        return min + Math.random() * (max - min);
     }
 };
 
@@ -136,14 +152,16 @@ let game = { // весь игровой код
 game.platform = {
     x: 255,
     y: 300,
+    width: 130,
+    height: 52,
     moveLeft(grenadeMove) {
-        this.x -= 15;
+        this.x -= 20;
         if (grenadeMove !== false) {
             game.grenade.x -= 15;
         }
     },
     moveRight(grenadeMove) {
-        this.x += 15;
+        this.x += 20;
         if (grenadeMove !== false) {
             game.grenade.x += 15;
         }
@@ -152,13 +170,42 @@ game.platform = {
 
 game.grenade = {
     x: 300,
-    y: 270,
-    width: 40,
+    y: 260,
+    width: 9,
     height: 40,
     move() {
-        this.y -= 1;
+        this.y -= game.speedGrenade;
         this.x += game.angleGrenade;
     },
+    collide(object) {
+        if ( this.x + this.width > object.x &&
+            this.x < object.x + object.width &&
+            this.y + this.height > object.y &&
+            this.y < object.y + object.height ) {
+                return true;
+        }
+        return false;
+    },
+    bumpBlock(block) {
+        game.speedGrenade *= -1; // меняет направление в случае удара
+        block.active = false;
+
+    },
+    bumpPlatform() {
+        game.speedGrenade *= -1; // меняет направление в случае удара
+        this.calculateAngle();
+    },
+    calculateAngle() {
+        this.touchX = (this.x + this.width / 2) - game.platform.x; // координата касания гранаты с платформой
+
+        let leftPartPlatform = game.platform.width / 2; // 65
+        let rightPartPlatform = game.platform.width;    // 130
+        if (this.touchX > 0 && this.touchX < leftPartPlatform) {
+            game.angleGrenade = -((2.5 / leftPartPlatform) * ( 65 - this.touchX));
+        } else if (this.touchX > leftPartPlatform && this.touchX < rightPartPlatform) {
+            game.angleGrenade = (2.5 / leftPartPlatform) * (this.touchX - leftPartPlatform);
+        }
+    }
 };
 
 // Запускает игру только после того, как загрузился весь HTML-документ
