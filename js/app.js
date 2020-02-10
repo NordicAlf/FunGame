@@ -2,11 +2,16 @@ let game = { // весь игровой код
     // загружаемые картинки
     sprites: {
         background: null,
+        gameover_restart: null,
+        gameover_quit: null,
+        gamewin_restart: null,
+        gamewin_quit: null,
         grenade: null,
         platformLeft: null,
         platformRight: null,
         trash: null,
     },
+    gameWork: 'run',
 
     setSettings() {
         this.width = 640; // ширина экрана
@@ -19,6 +24,7 @@ let game = { // весь игровой код
         this.blocks = []; // массив под мишени
         this.rows = 3; // количество строк мишеней-мусорок
         this.cols = 9;  // количестов колонок мишеней-мусорок
+        this.counterBlocks = this.rows * this.cols;
 
         this.grenadeStart = false; // false - стартует после нажатия пробела
         this.grenadeMoveInPlatform = true; // - граната вначале движется с платформой
@@ -120,11 +126,13 @@ let game = { // весь игровой код
     update() {
         if (this.grenadeStart) {
             this.grenade.move();
-            if (this.grenade.collide(this.platform)) {
-                this.grenade.bumpPlatform();
-            }
+            this.collidePlatform();
         }
+        this.collideBlocks();
+        this.collideWorldBorders();
+    },
 
+    collideBlocks() {
         for (let block of this.blocks) {
             if (block.active === true) {
                 if (this.grenade.collide(block)) { // проверка столкновения гранаты с мусоркой
@@ -134,15 +142,88 @@ let game = { // весь игровой код
         }
     },
 
-    // запуск
-    run() {
-        window.requestAnimationFrame(() => { // отрисовка после всех инструкций
-            this.update();
-            this.render();
-            this.run();
-        });
+    collidePlatform() {
+        if (this.grenade.collide(this.platform)) {
+            this.grenade.bumpPlatform();
+        }
     },
 
+    collideWorldBorders() {
+        let x = game.grenade.x;
+        let y = game.grenade.y;
+
+        if (x <= 0 ||
+            x + game.grenade.width >= this.width) {
+            game.angleGrenade *= -1;
+        }
+        if (y <= 0 ) {
+            game.speedGrenade *= -1;
+        }
+        if (y > this.height) {
+            this.gameWork = 'gameover';
+        }
+        return false;
+    },
+
+    // запуск
+    run() {
+        if ( this.gameWork === 'run' ) {
+            window.requestAnimationFrame(() => { // отрисовка после всех инструкций
+                this.update();
+                this.render();
+                this.run();
+            });
+        }
+
+        if ( this.gameWork === 'gameover') {
+            this.gameOver();
+        }
+
+        if (this.gameWork === 'gamewin') {
+            this.gameWin();
+        }
+
+    },
+    gameOver() {
+        this.ctx.drawImage(this.sprites.gameover_restart, 0, 0);
+        let status = 'restart';
+        window.addEventListener("keydown", e => {
+            if (e.code === "KeyS" || e.code === "ArrowDown") {
+                this.ctx.drawImage(this.sprites.gameover_quit, 0, 0);
+                status = 'quit';
+            } else if (e.code === "KeyW" || e.code === "ArrowUp") {
+                this.ctx.drawImage(this.sprites.gameover_restart, 0, 0);
+                status = 'restart';
+            }
+
+            if (e.code === "Space" && status === 'restart') {
+                location.reload();
+            } else if (e.code === "Space" && status === 'quit') {
+                alert('Выйти');
+            }
+
+        });
+    },
+    gameWin() {
+        this.ctx.drawImage(this.sprites.gamewin_restart, 0, 0);
+        let status = 'restart';
+        window.addEventListener("keydown", e => {
+            if (e.code === "KeyS" || e.code === "ArrowDown") {
+                this.ctx.drawImage(this.sprites.gamewin_quit, 0, 0);
+                status = 'quit';
+            } else if (e.code === "KeyW" || e.code === "ArrowUp") {
+                this.ctx.drawImage(this.sprites.gamewin_restart, 0, 0);
+                status = 'restart';
+            }
+
+            if (e.code === "Space" && status === 'restart') {
+                location.reload();
+            } else if (e.code === "Space" && status === 'quit') {
+                alert('Выйти');
+            }
+
+        });
+    },
     numRandom(min, max) {
         return min + Math.random() * (max - min);
     }
@@ -189,9 +270,15 @@ game.grenade = {
     bumpBlock(block) {
         game.speedGrenade *= -1; // меняет направление в случае удара
         block.active = false;
-
+        game.counterBlocks--; // уменьшает количество блоков
+        if (game.counterBlocks === 0) {
+            game.gameWork = 'gamewin';
+        }
     },
     bumpPlatform() {
+        if (game.speedGrenade === 1) {
+            return; // прервать, если уже изменено направление
+        }
         game.speedGrenade *= -1; // меняет направление в случае удара
         this.calculateAngle();
     },
