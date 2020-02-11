@@ -12,6 +12,12 @@ let game = { // весь игровой код
         platformRight: null,
         trash: null,
     },
+    sounds: {
+        game_music: null,
+        grenade_border_bump: null,
+        grenade_damage: null,
+        grenade_gameover: null,
+    },
     gameWork: 'menu',
 
     setSettings() {
@@ -71,8 +77,9 @@ let game = { // весь игровой код
     preload(callback) {
         let loaded = 0;
         let required = Object.keys(this.sprites).length;
+        required += Object.keys(this.sounds).length;
 
-        let onImageLoad = () => {
+        let onLoad = () => {
             loaded++;
             if (loaded >= required) {
                 callback(); // запуск, если все картинки загружены
@@ -82,7 +89,11 @@ let game = { // весь игровой код
         for (let key in this.sprites) {
             this.sprites[key] = new Image();
             this.sprites[key].src = `img/${key}.png`;
-            this.sprites[key].addEventListener("load", onImageLoad);
+            this.sprites[key].addEventListener("load", onLoad);
+        }
+        for (let key in this.sounds) {
+            this.sounds[key] = new Audio(`sounds/${key}.mp3`);
+            this.sounds[key].addEventListener("canplaythrough", onLoad, {once: true});
         }
     },
 
@@ -156,12 +167,16 @@ let game = { // весь игровой код
         if (x <= 0 ||
             x + game.grenade.width >= this.width) {
             game.angleGrenade *= -1;
+            this.sounds.grenade_border_bump.play();
         }
         if (y <= 0 ) {
             game.speedGrenade *= -1;
+            this.sounds.grenade_border_bump.play();
         }
         if (y > this.height) {
+            this.sounds.grenade_gameover.play();
             this.gameWork = 'gameover';
+
         }
         return false;
     },
@@ -177,6 +192,7 @@ let game = { // весь игровой код
                 this.update();
                 this.render();
                 this.run();
+                this.sounds.game_music.play();
             });
         }
 
@@ -211,9 +227,10 @@ let game = { // весь игровой код
             }
 
             if (e.code === "Space" && status === 'restart') {
+                this.gameWork = 'run';
                 location.reload();
             } else if (e.code === "Space" && status === 'quit') {
-                alert('Выйти');
+                location.reload();
             }
 
         });
@@ -283,10 +300,12 @@ game.grenade = {
         return false;
     },
     bumpBlock(block) {
+        game.sounds.grenade_damage.play();
         game.speedGrenade *= -1; // меняет направление в случае удара
         block.active = false;
         game.counterBlocks--; // уменьшает количество блоков
         if (game.counterBlocks === 0) {
+            game.sounds.grenade_gameover.play();
             game.gameWork = 'gamewin';
         }
     },
