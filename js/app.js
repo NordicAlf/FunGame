@@ -6,19 +6,20 @@ let game = { // весь игровой код
         gameover_quit: null,
         gamewin_restart: null,
         gamewin_quit: null,
+        game_menu: null,
         grenade: null,
         platformLeft: null,
         platformRight: null,
         trash: null,
     },
-    gameWork: 'run',
+    gameWork: 'menu',
 
     setSettings() {
         this.width = 640; // ширина экрана
         this.height = 360;  // высота экрана
 
         this.angleGrenade = this.numRandom(-2.5, 2.5); // угол X куда стартанёт граната
-        this.speedGrenade = 1;
+        this.speedGrenade = 1.5;
         this.platformChoiceControl = "platformLeft"; // куда смотрит платформа изначально
 
         this.blocks = []; // массив под мишени
@@ -167,6 +168,10 @@ let game = { // весь игровой код
 
     // запуск
     run() {
+        if (this.gameWork === 'menu') {
+            this.gameMenu();
+        }
+
         if ( this.gameWork === 'run' ) {
             window.requestAnimationFrame(() => { // отрисовка после всех инструкций
                 this.update();
@@ -183,6 +188,15 @@ let game = { // весь игровой код
             this.gameWin();
         }
 
+    },
+    gameMenu() {
+        this.ctx.drawImage(this.sprites.game_menu, 0, 0);
+        window.addEventListener("keydown", e => {
+            if (e.code === "Space") {
+                this.gameWork = 'run';
+                this.run();
+            }
+        });
     },
     gameOver() {
         this.ctx.drawImage(this.sprites.gameover_restart, 0, 0);
@@ -217,9 +231,10 @@ let game = { // весь игровой код
             }
 
             if (e.code === "Space" && status === 'restart') {
+                this.gameWork = 'run';
                 location.reload();
             } else if (e.code === "Space" && status === 'quit') {
-                alert('Выйти');
+                location.reload();
             }
 
         });
